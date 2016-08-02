@@ -1,11 +1,47 @@
-<pre>
-  프로그램이 I/O 대기 중일 때, 서버가 더 많은 요청을 처리해야 한다면 어떻게 될까?
-  이런 상황에서 멀티스레드 접근법을 사용한다
-  일반적인 구현 방법은 하나의 연결당 하나의 스레드를 사용하고, 여러 연결을 위한스레드 풀을 만드는 것이다
-  스레드는 프로세서가 하나의 태스크를 처리하기 위한 계산 작업 공간이라고 볼 수 있다
-  대부분의 경우 스레드는 프로세스 내부에 포함돼 있으며 자신의 작업 메모리를 유지한다
-  각 스레드는 하나 이상의 서버 연결을 처리한다
-  애플리케이션 내부에서 스레드를 관리하는 것은 굉장히 복잡할 수 있다
-  또한, 많은 수의 서버 연결을 동시에 처리해야 하는 경우라면 스레딩은 운영체제의 자원에 부담을 주게된다
-  스레드는 추가적인 RAM을 사용할 뿐만 아니라 CPU의 문맥 교환이 필요하다
-</pre>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HarryHoliday</title>
+    <!-- Bootstrap -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css.map" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap-theme.min.css.map" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+    <div class="well">
+        <span>
+프로그램이 I/O 대기 중일 때, 서버가 더 많은 요청을 처리해야 한다면 어떻게 될까?
+이런 상황에서 멀티스레드 접근법을 사용한다
+일반적인 구현 방법은 하나의 연결당 하나의 스레드를 사용하고, 여러 연결을 위한스레드 풀을 만드는 것이다
+스레드는 프로세서가 하나의 태스크를 처리하기 위한 계산 작업 공간이라고 볼 수 있다
+대부분의 경우 스레드는 프로세스 내부에 포함돼 있으며 자신의 작업 메모리를 유지한다
+각 스레드는 하나 이상의 서버 연결을 처리한다
+애플리케이션 내부에서 스레드를 관리하는 것은 굉장히 복잡할 수 있다
+또한, 많은 수의 서버 연결을 동시에 처리해야 하는 경우라면 스레딩은 운영체제의 자원에 부담을 주게된다
+스레드는 추가적인 RAM을 사용할 뿐만 아니라 CPU의 문맥 교환이 필요하다  
+        </span>
+    </div>
+    <div class="well">
+        <span>
+DIRT는 노드를 적용하기에 적절한 형태의 애플리케이션인 데이터 집약적 실시간 애플리케이션 ( data-intensive real-time )의 앞글자를 딴 단어다
+노드는 I/O 부분에서 매우 가볍기 때문에 한 파이프 에서 다른 파이프로 데이터를 전송하는 프로싱( proxing ) 이나 셔플링( shuffling )에 적합하다
+이는 서버가 많으 요청을 처리하는 중에도 여러개의 연결을 유지할 수 있으며 메모리 공간을 적게 사용하도록 관리되기 때문이다
+노드는 브라우저와 같이 요청에 빠르게 반응하도록 설계되었다
+        </span>
+    </div>
+    <!-- script start -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- script end -->
+</body>
+</html>
