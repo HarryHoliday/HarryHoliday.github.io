@@ -20,23 +20,74 @@
 <body>
     <div class="well">
         <pre>
-프로그램이 I/O 대기 중일 때, 서버가 더 많은 요청을 처리해야 한다면 어떻게 될까?
-이런 상황에서 멀티스레드 접근법을 사용한다
-일반적인 구현 방법은 하나의 연결당 하나의 스레드를 사용하고, 여러 연결을 위한스레드 풀을 만드는 것이다
-스레드는 프로세서가 하나의 태스크를 처리하기 위한 계산 작업 공간이라고 볼 수 있다
-대부분의 경우 스레드는 프로세스 내부에 포함돼 있으며 자신의 작업 메모리를 유지한다
-각 스레드는 하나 이상의 서버 연결을 처리한다
-애플리케이션 내부에서 스레드를 관리하는 것은 굉장히 복잡할 수 있다
-또한, 많은 수의 서버 연결을 동시에 처리해야 하는 경우라면 스레딩은 운영체제의 자원에 부담을 주게된다
-스레드는 추가적인 RAM을 사용할 뿐만 아니라 CPU의 문맥 교환이 필요하다  
+From this [issue](https://github.com/puphpet/puphpet/issues/1025#issuecomment-157059174):
+
+I know that this issue is closed, but as I spent a lot of time to understand what was going on, I made some researches and I can explain why this happen, and you can fix it.
+
+Using git config core.autocrlf true can help, but not on a multi-developpers project.
+This command has to be the same on each developper machine, and that's not always the case.
+
+You have to use the .gitattributes provided in the puphpet archive and edit it as follow (carefull, this file need to be in your project root)
+You also need to use an IDE that allow you to save/edit files as LF (like phpstorm). You can check the type of the file in the bottom right corner, in the status bar (you'll see LF or CRLF while a file is opened)
+
+.gitattributes
+=================================================
+# These settings are for any web project
+
+# Handle line endings automatically for files detected as text
+# and leave all files detected as binary untouched.
+* text=auto
+
+# Force the following filetypes to have unix eols, so Windows does not break them
+*.* text eol=lf
+
+# Windows forced line-endings
+/.idea/* text eol=crlf
+
+#
+## These files are binary and should be left untouched
+#
+
+# (binary is a macro for -text -diff)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.pyc binary
+*.pdf binary
+*.ez binary
+*.bz2 binary
+*.swp binary
         </pre>
     </div>
     <div class="well">
         <pre>
-DIRT는 노드를 적용하기에 적절한 형태의 애플리케이션인 데이터 집약적 실시간 애플리케이션 ( data-intensive real-time )의 앞글자를 딴 단어다
-노드는 I/O 부분에서 매우 가볍기 때문에 한 파이프 에서 다른 파이프로 데이터를 전송하는 프로싱( proxing ) 이나 셔플링( shuffling )에 적합하다
-이는 서버가 많으 요청을 처리하는 중에도 여러개의 연결을 유지할 수 있으며 메모리 공간을 적게 사용하도록 관리되기 때문이다
-노드는 브라우저와 같이 요청에 빠르게 반응하도록 설계되었다
+root = true
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+[*.md]
+trim_trailing_whitespace = false
+[*.gradle]
+indent_size = 4
+
         </pre>
     </div>
     <div class="well">
