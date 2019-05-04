@@ -19,3 +19,4 @@ http://editorconfig.org/
 *  4. filepond https://github.com/pqina/filepond
 *  5. puppeteer https://github.com/GoogleChrome/puppeteer
 *  6. rmodal.js https://rmodal.js.org/
+*  7. crumbsjs https://github.com/nirtz89/crumbsjs
