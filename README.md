@@ -20,3 +20,7 @@ http://editorconfig.org/
 *  5. puppeteer https://github.com/GoogleChrome/puppeteer
 *  6. rmodal.js https://rmodal.js.org/
 *  7. crumbsjs https://github.com/nirtz89/crumbsjs
+*  8. autonumeric http://autonumeric.org/
+*  9. day.js
+*  10. big.js
+*  11. frenchkiss https://github.com/koala-interactive/frenchkiss.js
