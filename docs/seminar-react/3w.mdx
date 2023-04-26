@@ -1,0 +1,287 @@
+---
+sidebar_position: 4
+---
+
+# 3주
+
+- useHook - 2
+- recoil를 사용한 state관리 - 2
+- notificiation 구현
+
+---
+
+- hooks/useApp.ts에 코드를 추가하여 시도
+- cors오류발생
+
+```ts
+...
+const init = async () => {
+  const { data } = await axios.get('----');
+  console.log(data);
+  const ENV = await getEnv();
+  initOkta(ENV, setUserInfo);
+};
+...
+```
+
+- cors 오류 원인 확인 [javascript.info 🔗](https://ko.javascript.info/fetch-crossorigin)
+
+- hooks/useApp.ts의 코드를 서버사이드로 옮겨 proxy를 통해 데이터를 가져온다
+
+---
+
+`⚠️ 로컬 개발환경 구성시, dev환경의 api를 연동할 경우 이슈`
+
+1 2 3 4 5 6 7 8 9 내용 삭제 -
+
+---
+
+- games 저장한 recoil state생성
+- recoil/gamesState.ts
+
+```ts
+import { atom } from "recoil";
+
+export const gamesState = atom<GAME.LIST | []>({
+  key: "Games",
+  default: [],
+});
+```
+
+- hooks/useApp.ts 수정
+
+```ts
+import { useEffect, useState } from "react";
+import { getEnv } from "../fetchers/getEnv";
+import { initOkta } from "../helpers/okta";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import { userInfoState } from "../recoil/userInfoState";
+import axios from "axios";
+import { gamesState } from "../recoil/gameState";
+
+export const useApp = () => {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [userInfo, setUserInfo] = useRecoilState(userInfoState);
+  const setGames = useSetRecoilState(gamesState);
+
+  useEffect(() => {
+    const init = async () => {
+      const ENV = await getEnv();
+      initOkta(ENV, setUserInfo);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (userInfo === null) return;
+    setIsAppReady(true);
+    const boot = async () => {
+      const { data } = await axios.get("-");
+      if (data?.errorCode === 0) {
+        setGames(data.games);
+      }
+    };
+    boot();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo]);
+
+  return { isAppReady, userInfo };
+};
+```
+
+- server/api/mconsole.ts 파일 생성
+
+```ts
+import { Router } from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
+
+const router = Router();
+
+router.get(
+  "-",
+  createProxyMiddleware({
+    target: "-",
+    changeOrigin: true,
+    pathRewrite: (_path, req) => {
+      return "-";
+    },
+  })
+);
+
+export default router;
+```
+
+- server/index.ts 수정
+
+```ts
+import { Router } from "express";
+import health from "./health";
+import - from "./-"; // add
+
+const router = Router();
+
+router.use(health);
+router.use(-); // add
+
+export default router;
+```
+
+- '/' path에 가져온 데이터를 표시한다
+
+- components/-.tsx 생성
+
+```tsx
+import { useRecoilValue } from "recoil";
+import { gamesState } from "../recoil/gameState";
+
+const - = () => {
+  const games = useRecoilValue(gamesState);
+
+  return (
+    <div className="max-w-md p-4 space-x-4 carousel carousel-center bg-neutral rounded-box">
+      {games
+        .filter(({ thumbUrl }) => !!thumbUrl)
+        .map(({ gameCode, gameName, thumbUrl }) => (
+          <div key={gameCode} className="carousel-item">
+            <div className="shadow-xl card w-96 bg-base-100 image-full">
+              <figure>
+                <img src={thumbUrl} alt={gameName} />
+              </figure>
+              <div className="card-body">
+                <h2 className="card-title">{gameName}</h2>
+                <p>{gameCode}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+export default -;
+```
+
+- routes/index.tsx 수정
+
+```tsx
+import ClockIcon from "../components/icons/ClockIcon";
+import HomeIcon from "../components/icons/HomeIcon";
+import InfoIcon from "../components/icons/InfoIcon";
+import - from "../components/-";
+import About from "./about";
+import Home from "./home";
+import StopWatch from "./stopwatch";
+
+type Menu = {
+  path: string;
+  title?: string;
+  icon?: React.ReactNode;
+  element: React.ReactNode;
+};
+
+export const menus: Menu[] = [
+  { path: "", title: "", icon: null, element: <- /> },
+  { path: "home", title: "home", icon: <HomeIcon />, element: <Home /> },
+  { path: "about", title: "about", icon: <InfoIcon />, element: <About /> },
+  {
+    path: "stopwatch",
+    title: "stopwatch",
+    icon: <ClockIcon />,
+    element: <StopWatch />,
+  },
+];
+```
+
+- react-toastify install [👉🔗](https://www.npmjs.com/package/react-toastify)
+
+```bash
+npm i react-toastify --save-dev
+```
+
+- App.tsx 수정
+
+```tsx
+import { FC, ReactNode } from "react";
+import { ToastContainer } from "react-toastify";
+import logo from "./logo.svg";
+import { useApp } from "./hooks/useApp";
+
+import "react-toastify/dist/ReactToastify.css";
+
+type Props = {
+  children: ReactNode;
+};
+
+const App: FC<Props> = ({ children }) => {
+  const { isAppReady } = useApp();
+
+  if (!isAppReady) {
+    return (
+      <div className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {children}
+      <ToastContainer />
+    </>
+  );
+};
+
+export default App;
+```
+
+- routes/changeAvatar.tsx
+
+```tsx
+import { toast } from "react-toastify";
+import { useSetRecoilState, useResetRecoilState } from "recoil";
+import { userAvatarInfoState } from "../recoil/userInfo";
+const ChangeAvatar = () => {
+  const setUserAvatarInfo = useSetRecoilState(userAvatarInfoState);
+  const resetUserAvatarInfo = useResetRecoilState(userAvatarInfoState);
+
+  const refreshHandler = () => {
+    const email = generateRandomString(Math.random() * 100);
+    toast.success(email);
+
+    setUserAvatarInfo((curUserInfo) => {
+      if (!curUserInfo) return curUserInfo;
+      return { ...curUserInfo, email };
+    });
+  };
+
+  const resetHandler = () => {
+    toast.info("reset");
+    resetUserAvatarInfo();
+  };
+
+  const generateRandomString = (num: Number) => {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let result = "";
+    const charactersLength = characters.length;
+    for (let i = 0; i < num; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    return result;
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-2">
+      <button className="btn btn-wide" onClick={refreshHandler}>
+        Change Avatar
+      </button>
+      <button className="btn btn-wide btn-secondary" onClick={resetHandler}>
+        Reset
+      </button>
+    </div>
+  );
+};
+
+export default ChangeAvatar;
+```

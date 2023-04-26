@@ -1,0 +1,718 @@
+---
+sidebar_position: 3
+---
+
+# 2주
+
+- useState, useEffect를 사용한 state관리 - 2
+- useHook - 1
+- recoil를 사용한 state관리 - 1
+  - okta연동
+
+---
+
+- 정보 공유 (openssl 3.0 ~ 3.6 취약점 이슈) [👉🔗](https://www.openssl.org/news/secadv/20221101.txt)
+- 웹 프로그래밍으로 웹 어플리케이션을 구현하여 웹 호스팅을 통해 사용자에게 웹 서비스를 제공한다. `👆 이 문장으로 그려지는 그림은 어떤건지 궁금합니다. 또한, 자신의 글로 한번 설명해 주세요`
+- [reactrouter](https://reactrouter.com) 홈페이지의 tutorial을 따라 해보세요
+
+---
+
+`💻 coding - start`
+
+```txt
+// TODO:
+// useEffect
+//  - componentDidmount
+//  - componentDidUpdate
+//  - componentWillUnmount
+// useState with no.2
+// button click event
+// e.stopPropagation();
+// e.preventDefault() with link
+// useHook
+// share state at hierarchical structure [parent, children]
+```
+
+- routes/home.tsx를 수정
+
+```tsx
+import { useEffect } from "react";
+
+const Home = () => {
+  useEffect(() => {
+    console.log("home is mounted");
+    return () => {
+      console.log("home is unmounted");
+    };
+  }, []);
+
+  return <div>home</div>;
+};
+
+export default Home;
+```
+
+- 페이지를 이동하면 콘솔로그를 확인
+- strict mode 때문에 로그가 이상하게 표시되는 것처럼 보임, 하지만 정상 문서 확인 [👉🔗](https://reactjs.org/docs/strict-mode.html#detecting-unexpected-side-effects)
+
+- useState를 통해 업데이트 후에 로그가 표시되는걸 확인
+
+```tsx
+import { useEffect, useState } from "react";
+
+const Home = () => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    console.log("home is mounted");
+    setTimeout(() => {
+      setIsReady(true);
+    }, 3_000); // 3 * 1000, 3000, 3
+    return () => {
+      console.log("home is unmounted");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("home is updated");
+  }, [isReady]);
+
+  return <div>home</div>;
+};
+
+export default Home;
+```
+
+- isReady state가 바뀌면 로그가 표시된다
+
+- count 상태를 추가해서 data flow를 생각해보자
+
+```tsx
+import { MouseEventHandler, useEffect, useState } from "react";
+
+const Home = () => {
+  const [isReady, setIsReady] = useState(false);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    console.log("home is mounted");
+    setTimeout(() => {
+      setIsReady(true);
+    }, 3_000); // 3 * 1000, 3000, 3
+    return () => {
+      console.log("home is unmounted");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("home is updated");
+  }, [isReady]);
+
+  const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
+    setCount((currentCount) => currentCount + 1);
+  };
+
+  return (
+    <button className="btn btn-wide btn-primary" onClick={handleClick}>
+      {count}
+    </button>
+  );
+};
+
+export default Home;
+```
+
+- event handling에 디폴트와 버블링에 대해 알아보자, 세미나시 코딩
+
+- home에서 count state를 hooks/useCount로 분리해보자, 분리하면 about에서 count상태를 공유 받을 수 있을까?
+- hooks/useCount.ts
+
+```tsx
+import { useState } from "react";
+
+export const useCount = () => {
+  const [count, setCount] = useState(0);
+  return { count, setCount };
+};
+```
+
+- home.tsx 수정
+
+```tsx
+import { MouseEventHandler, useEffect, useState } from 'react';
+import { useCount } from '../hooks/useCount';
+
+const Home = () => {
+  const [isReady, setIsReady] = useState(false);
+  const { count, setCount } = useCount();
+
+  ...
+};
+
+export default Home;
+
+```
+
+- about.tsx에서 useCount를 통해 count를 가져와보자
+
+```tsx
+import { useCount } from "../hooks/useCount";
+
+const About = () => {
+  const { count } = useCount();
+  return <>{count}</>;
+};
+
+export default About;
+```
+
+- 공유안됨
+- useState는 호출하는 컴포넌트 또는 커스텀 훅에서 독립적으로 상태를 유지한다.
+
+- recoil을 통해 상태를 공유하자
+- recoil/count.ts 생성
+
+```ts
+import { atom } from "recoil";
+
+export const countState = atom<number>({
+  key: "Count",
+  default: 0,
+});
+```
+
+- hooks/useCount.ts 수정
+
+```ts
+import { useRecoilState } from "recoil";
+import { countState } from "../recoil/count";
+
+export const useCount = () => {
+  const [count, setCount] = useRecoilState(countState);
+  return { count, setCount };
+};
+```
+
+- [okta 👉🔗](https://www.npmjs.com/package/@okta/okta-auth-js)
+
+- App.tsx에 okta 설정
+
+```tsx
+import { FC, ReactNode, useEffect, useState } from "react";
+import {
+  CustomUserClaims,
+  OktaAuth,
+  OktaAuthOptions,
+  UserClaims,
+} from "@okta/okta-auth-js";
+import logo from "./logo.svg";
+
+type Props = {
+  children: ReactNode;
+};
+
+const App: FC<Props> = ({ children }) => {
+  const [isReady, setIsReady] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserClaims<CustomUserClaims> | null>(
+    null
+  );
+
+  useEffect(() => {
+    const init = async () => {
+      const config: OktaAuthOptions = {
+        issuer: "***",
+        clientId: "***",
+        scopes: ["email", "openid", "profile"],
+        transformAuthState: async (oktaAuth, authState) => {
+          if (!authState.isAuthenticated) {
+            return authState;
+          }
+          const user = await oktaAuth.token.getUserInfo();
+          authState.isAuthenticated = !!user;
+          delete user.headers;
+          authState.user = user;
+          return authState;
+        },
+      };
+
+      const authClient: OktaAuth = new OktaAuth(config);
+      authClient.authStateManager.subscribe(async (authState) => {
+        if (!authState.isAuthenticated) {
+          if (authClient.isLoginRedirect()) {
+            // console.log('here');
+            try {
+              await authClient.handleLoginRedirect();
+            } catch (error) {
+              console.log(error);
+            }
+          } else {
+            authClient.signInWithRedirect();
+          }
+        }
+        if (authState.isAuthenticated) {
+          setIsReady(true);
+          setUserInfo(authState.user as UserClaims<CustomUserClaims>);
+        }
+      });
+      authClient.authStateManager.updateAuthState();
+    };
+    init();
+  }, []);
+
+  console.log(userInfo);
+
+  if (!isReady) {
+    return (
+      <div className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+export default App;
+```
+
+- config설정을 환경변수로 옮겨 배포환경에 따라 다르게 적용 가능하도록 한다
+
+```tsx
+...
+const { data: ENV } = await axios.get('/env');
+const config: OktaAuthOptions = {
+  issuer: ENV?.OKTA_ISSUER,
+  clientId: ENV?.OKTA_CLIENT_ID,
+  scopes: ENV?.OKTA_SCOPES.split(','),
+  transformAuthState: async (oktaAuth, authState) => {
+    if (!authState.isAuthenticated) {
+      return authState;
+    }
+    const user = await oktaAuth.token.getUserInfo();
+    authState.isAuthenticated = !!user;
+    delete user.headers;
+    authState.user = user;
+    return authState;
+  },
+};
+...
+```
+
+- useApp을 만들어 App.tsx에서 okta관련 코드를 옮긴다
+
+- hooks 폴더를 생성, useApp.ts 파일을 만든다
+- hooks/useApp.ts
+
+```ts
+import { useEffect, useState } from "react";
+import {
+  CustomUserClaims,
+  OktaAuth,
+  OktaAuthOptions,
+  UserClaims,
+} from "@okta/okta-auth-js";
+import axios from "axios";
+
+export const useApp = () => {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserClaims<CustomUserClaims> | null>(
+    null
+  );
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: ENV } = await axios.get("/env");
+      const config: OktaAuthOptions = {
+        issuer: ENV?.OKTA_ISSUER,
+        clientId: ENV?.OKTA_CLIENT_ID,
+        scopes: ENV?.OKTA_SCOPES.split(","),
+        transformAuthState: async (oktaAuth, authState) => {
+          if (!authState.isAuthenticated) {
+            return authState;
+          }
+          const user = await oktaAuth.token.getUserInfo();
+          authState.isAuthenticated = !!user;
+          delete user.headers;
+          authState.user = user;
+          return authState;
+        },
+      };
+
+      const authClient: OktaAuth = new OktaAuth(config);
+      authClient.authStateManager.subscribe(async (authState) => {
+        if (!authState.isAuthenticated) {
+          if (authClient.isLoginRedirect()) {
+            // console.log('here');
+            try {
+              await authClient.handleLoginRedirect();
+            } catch (error) {
+              console.log(error);
+            }
+          } else {
+            authClient.signInWithRedirect();
+          }
+        }
+        if (authState.isAuthenticated) {
+          setIsAppReady(true);
+          setUserInfo(authState.user as UserClaims<CustomUserClaims>);
+        }
+      });
+      authClient.authStateManager.updateAuthState();
+    };
+    init();
+  }, []);
+
+  return { isAppReady, userInfo };
+};
+```
+
+- App.tsx
+
+```tsx
+import { FC, ReactNode } from "react";
+import logo from "./logo.svg";
+import { useApp } from "./hooks/useApp";
+
+type Props = {
+  children: ReactNode;
+};
+
+const App: FC<Props> = ({ children }) => {
+  const { isAppReady } = useApp();
+  if (!isAppReady) {
+    return (
+      <div className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+export default App;
+```
+
+- useApp.ts 에서 axios부분 코드를 fetchers로 옮겨 관련 기능을 함수로 제공하자
+- fetchers 폴더를 생성하고 getEnv.ts 파일을 만든다
+- fetchers/getEnv.ts
+
+```ts
+import axios from "axios";
+
+export const getEnv = async () => {
+  const { data } = await axios.get("/env");
+  return data;
+};
+```
+
+- useApp.ts 에서 ok부분 코드를 helpers로 옮겨 관련 기능을 함수로 제공하자
+- helpers 폴더를 생성하고 okta.ts 파일을 만든다
+- helpers/okta.ts
+
+```ts
+import {
+  CustomUserClaims,
+  OktaAuth,
+  OktaAuthOptions,
+  UserClaims,
+} from "@okta/okta-auth-js";
+
+const getConfig = (ENV: any) => {
+  const config: OktaAuthOptions = {
+    issuer: ENV?.OKTA_ISSUER,
+    clientId: ENV?.OKTA_CLIENT_ID,
+    scopes: ENV?.OKTA_SCOPES.split(","),
+    transformAuthState: async (oktaAuth, authState) => {
+      if (!authState.isAuthenticated) {
+        return authState;
+      }
+      const user = await oktaAuth.token.getUserInfo();
+      authState.isAuthenticated = !!user;
+      delete user.headers;
+      authState.user = user;
+      return authState;
+    },
+  };
+  return config;
+};
+
+export const initOkta = (
+  ENV: any,
+  cb: (user: UserClaims<CustomUserClaims>) => void
+) => {
+  const config = getConfig(ENV);
+  const authClient: OktaAuth = new OktaAuth(config);
+  authClient.authStateManager.subscribe(async (authState) => {
+    if (!authState.isAuthenticated) {
+      if (authClient.isLoginRedirect()) {
+        // console.log('here');
+        try {
+          // await authClient.handleLoginRedirect();
+          // delay 0.5s
+          setTimeout(async () => {
+            await authClient.handleLoginRedirect();
+          }, 500);
+        } catch (error) {
+          console.log(error);
+        }
+      } else {
+        authClient.signInWithRedirect();
+      }
+    }
+    if (authState.isAuthenticated) {
+      cb(authState.user as UserClaims<CustomUserClaims>);
+    }
+  });
+  authClient.authStateManager.updateAuthState();
+};
+```
+
+- 위 두가지 기능을 다른 파일로 옮겨, hooks/useApp.ts은 아래와 같이 수정되었다
+
+```ts
+import { useEffect, useState } from "react";
+import { CustomUserClaims, UserClaims } from "@okta/okta-auth-js";
+import { getEnv } from "../fetchers/getEnv";
+import { initOkta } from "../helpers/okta";
+
+export const useApp = () => {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserClaims<CustomUserClaims> | null>(
+    null
+  );
+
+  useEffect(() => {
+    const init = async () => {
+      const ENV = await getEnv();
+      initOkta(ENV, setUserInfo);
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (userInfo === null) return;
+    setIsAppReady(true);
+  }, [userInfo]);
+
+  return { isAppReady, userInfo };
+};
+```
+
+- okta에서 가져온 userInfo를 다른 컴포넌트에서 사용하게 하려면?
+- 기본적으로 react는 context 를 가지고 있다 [🔗](https://ko.reactjs.org/docs/context.html)
+- recoil을 사용한다
+
+- index.tsx 수정
+
+```ts
+...
+<RecoilRoot>
+  <App>
+    <RouterProvider router={router} />
+  </App>
+</RecoilRoot>
+...
+```
+
+- recoil/userInfoState.ts 를 만든다
+
+```ts
+import { CustomUserClaims, UserClaims } from "@okta/okta-auth-js";
+import { atom } from "recoil";
+
+export const userInfoState = atom<UserClaims<CustomUserClaims> | null>({
+  key: "UserInfo",
+  default: null,
+});
+```
+
+- hooks/useApp.ts를 수정
+
+```ts
+import { useEffect, useState } from "react";
+import { getEnv } from "../fetchers/getEnv";
+import { initOkta } from "../helpers/okta";
+import { useRecoilState } from "recoil";
+import { userInfoState } from "../recoil/userInfoState";
+
+export const useApp = () => {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [userInfo, setUserInfo] = useRecoilState(userInfoState);
+
+  useEffect(() => {
+    const init = async () => {
+      const ENV = await getEnv();
+      initOkta(ENV, setUserInfo);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (userInfo === null) return;
+    setIsAppReady(true);
+  }, [userInfo]);
+
+  return { isAppReady, userInfo };
+};
+```
+
+- Avatar를 만들어 Header에서 사용, Avatar는 userInfo의 email을 가져와 유니크한 아바타를 표현한다
+- [BigHead 🔗](https://github.com/RobertBroersma/bigheads)
+- 위 라이브러리에서 email을 사용해서 아바타를 표현하도록 커스텀했다
+
+- components/Avatar.tsx
+
+```tsx
+// @ts-nocheck
+import {
+  BigHead,
+  AvatarProps,
+  accessoryMap,
+  eyesMap,
+  eyebrowsMap,
+  bodyMap,
+  clothingMap,
+  facialHairMap,
+  graphicsMap,
+  hairMap,
+  hatMap,
+  mouthsMap,
+} from "@bigheads/core";
+
+const convertToNumberString18 = (str: string): AvatarProps => {
+  let number = 1;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str[i].charCodeAt(0);
+
+    number = Math.floor(number * 2 * charCode);
+    if (`${number}`.length > 18) {
+      number = Number(`${number}`.slice(0, 18));
+    }
+  }
+  if (`${number}`.length < 18) {
+    number = Number(`${number}000000000000000000`.slice(0, 18));
+  }
+
+  // return `${number}`;
+  const accessory = Object.keys(accessoryMap);
+  const eyes = Object.keys(eyesMap);
+  const eyebrows = Object.keys(eyebrowsMap);
+  const body = Object.keys(bodyMap);
+  const clothing = Object.keys(clothingMap);
+  const facialHair = Object.keys(facialHairMap);
+  const graphic = Object.keys(graphicsMap);
+  const hair = Object.keys(hairMap);
+  const hat = Object.keys(hatMap);
+  const mouth = Object.keys(mouthsMap);
+  const faceMaskColor: Pick<AvatarProps, "faceMaskColor"> = [
+    "red",
+    "black",
+    "white",
+    "blue",
+    "green",
+    undefined,
+  ];
+  const hatColor: Pick<AvatarProps, "hairColor"> = [
+    "red",
+    "black",
+    "white",
+    "blue",
+    "green",
+    undefined,
+  ];
+  const lipColor: Pick<AvatarProps, "lipColor"> = [
+    "red",
+    "pink",
+    "green",
+    "purple",
+    "turqoise",
+    undefined,
+  ];
+  const circleColor: Pick<AvatarProps, "circleColor"> = ["blue", undefined];
+  const clothingColor: Pick<AvatarProps, "clothingColor"> = [
+    "red",
+    "black",
+    "white",
+    "blue",
+    "green",
+    undefined,
+  ];
+  const skinTone: Pick<AvatarProps, "skinTone"> = [
+    "light",
+    "yellow",
+    "brown",
+    "dark",
+    "red",
+    "black",
+    undefined,
+  ];
+  const hairColor: Pick<AvatarProps, "hairColor"> = [
+    "white",
+    "blue",
+    "black",
+    "brown",
+    "blonde",
+    "orange",
+    "pink",
+    undefined,
+  ];
+
+  const props: AvatarProps = {
+    accessory: accessory[Number(`${number}`[0]) % accessory.length],
+    eyes: eyes[Number(`${number}`[1]) % eyes.length],
+    eyebrows: eyebrows[Number(`${number}`[2]) % eyebrows.length],
+    body: body[Number(`${number}`[3]) % body.length],
+    clothing: clothing[Number(`${number}`[4]) % clothing.length],
+    facialHair: facialHair[Number(`${number}`[5]) % facialHair.length],
+    graphic: graphic[Number(`${number}`[6]) % graphic.length],
+    hair: hair[Number(`${number}`[7]) % hair.length],
+    hat: hat[Number(`${number}`[8]) % hat.length],
+    mouth: mouth[Number(`${number}`[9]) % mouth.length],
+    skinTone: skinTone[Number(`${number}`[10]) % skinTone.length],
+    hairColor: hairColor[Number(`${number}`[11]) % hairColor.length],
+    clothingColor:
+      clothingColor[Number(`${number}`[12]) % clothingColor.length],
+    circleColor: circleColor[Number(`${number}`[13]) % circleColor.length],
+    lipColor: lipColor[Number(`${number}`[14]) % lipColor.length],
+    hatColor: hatColor[Number(`${number}`[15]) % hatColor.length],
+    faceMaskColor:
+      faceMaskColor[Number(`${number}`[16]) % faceMaskColor.length],
+    faceMask: !!(Number(`${number}`[17]) % 2),
+    mask: true,
+    lashes: false,
+  };
+  return props;
+  // console.log(Number(number.slice(-19)));
+};
+
+const Avatar: FC<{ email: string }> = ({ email }) => {
+  const props = convertToNumberString18(email);
+
+  return <BigHead {...props} />;
+};
+
+export default Avatar;
+```
+
+- compoents/layout/Header.tsx
+
+```tsx
+import { useRecoilValue } from "recoil";
+import { userInfoState } from "../../recoil/userInfoState";
+import Avatar from "../Avatar";
+
+const Header = () => {
+  const userInfo = useRecoilValue(userInfoState);
+  return (
+    <header className="relative flex flex-row items-center justify-center h-20 min-w-full">
+      <div className="w-20">
+        <Avatar email={userInfo?.email} />
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+```

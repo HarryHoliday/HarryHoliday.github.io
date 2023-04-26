@@ -1,0 +1,231 @@
+---
+sidebar_position: 7
+---
+
+# 6주
+
+- 파일업로드, file-pond 사용 - 1
+
+---
+
+1. file-pond 적용
+2. 코드 리뷰
+
+---
+
+- react file-pond [👉🔗](https://www.npmjs.com/package/react-filepond)
+- file-pond docs [👉🔗](https://pqina.nl/filepond/docs/api/server/)
+- axios docs [👉🔗](https://github.com/axios/axios/blob/main/examples/upload/index.html)
+
+- server관련 코드를 커스터마이징 하려하므로 관련한 file-pond의 문서와, axios사용시 진행사항 및 중단 처리 관련사항을 확인한다
+
+- install file-pond
+
+```bash
+npm install react-filepond filepond --save-dev
+npm i filepond-plugin-image-preview filepond-plugin-image-exif-orientation --save-dev
+```
+
+- src/components/FileUpload.tsx 파일생성
+
+```tsx
+import { useLayoutEffect, useState } from 'react';
+import { FilePond, registerPlugin } from 'react-filepond';
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+
+import 'filepond/dist/filepond.min.css';
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+import axios, { AxiosProgressEvent } from 'axios';
+
+// Register the plugins
+registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
+
+const FileUpload = () => {
+  const [data, setData] = useState(null);
+
+  useLayoutEffect(() => {
+    const el = document.querySelector('.filepond--credits') as HTMLAnchorElement;
+    el.innerText = '';
+  }, []);
+
+  return (
+    <div className="flex flex-col justify-center w-full h-full gap-4 p-2">
+      <div className="flex w-full">
+        <div className="w-full mockup-code">
+          <pre data-prefix="*" className="bg-error text-warning-content">
+            <code>-</code>
+          </pre>
+          <pre data-prefix="*" className="bg-warning text-warning-content">
+            <code>maybe need a gameCode to make path of upload</code>
+          </pre>
+          <pre data-prefix="*" className="bg-warning text-warning-content">
+            <code>check wiki, -</code>
+          </pre>
+        </div>
+      </div>
+      <div className="flex flex-row h-full gap-2">
+        <div className="flex flex-col w-[50%]">
+          <FilePond
+            allowMultiple={false}
+            maxFiles={1}
+            instantUpload={false}
+            server={{
+              process: async (_fieldName, file, _metadata, _load, error, progress, abort, _transfer, _options) => {
+                const data = new FormData();
+                console.log(file);
+                data.append('files', file);
+                const controller = new AbortController();
+
+                try {
+                  const response = await axios.post('/fileupload', data, {
+                    signal: controller.signal,
+                    onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+                      progress(!!progressEvent.total, progressEvent.loaded, progressEvent.total || 0);
+                    },
+                  });
+                  setData(response?.data || null);
+                  console.log(response);
+                } catch (err) {
+                  error('oh no');
+                }
+                return {
+                  abort: () => {
+                    controller.abort();
+                    abort();
+                  },
+                };
+              },
+            }}
+            labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+          />
+        </div>
+        <div className="w-[50%] drop-shadow bg-base-100 rounded-md">
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </div>
+    </div>
+  );
+};
+
+export default FileUpload;
+```
+
+- src/routes/amongAuth.tsx 에 파일업로드 컴포넌트를 추가한다
+
+```tsx
+...
+      </form>
+      <div className="divider" />
+      <FileUpload />
+...
+```
+
+- 서버쪽 코드를 추가한다
+- server/api/fileupload.ts 생성
+
+```ts
+import { Router } from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import dotenv from "dotenv";
+
+const config = dotenv.config().parsed;
+
+const router = Router();
+
+router.post(
+  "/fileupload",
+  createProxyMiddleware({
+    target: config?.FILE_UPLOAD_URL,
+    changeOrigin: true,
+    pathRewrite: (_path, _req) => {
+      return "/file/upload";
+    },
+  })
+);
+
+export default router;
+```
+
+- .env에 환경변수 추가
+
+```txt
+SERVER_PORT=4000
+OKTA_ISSUER=-
+OKTA_CLIENT_ID=-
+OKTA_SCOPES=email,openid,profile
+FILE_UPLOAD_URL=-
+DANGEROUSLY_DISABLE_HOST_CHECK=true
+```
+
+- server/api/index.ts 파일 수정
+
+```ts
+import { Router } from "express";
+import health from "./health";
+import mconsole from "./mconsole";
+import fileupload from "./fileupload";
+
+const router = Router();
+
+router.use(health);
+router.use(mconsole);
+router.use(fileupload);
+
+export default router;
+```
+
+- 파일업로드 컴포넌트에서 file-pond를 사용시 server에 요청하는 로직을 커스터마이징 했다
+- 문서를 보면서 axios로 요청을 보내고 업로드 진행사항 관련 이벤트를 통해 file-pond에 진행사항을 전달한다
+- 업로드 중단관련 로직을 확인한다
+
+```tsx
+<FilePond
+  allowMultiple={false}
+  maxFiles={1}
+  instantUpload={false}
+  server={{
+    process: async (
+      _fieldName,
+      file,
+      _metadata,
+      _load,
+      error,
+      progress,
+      abort,
+      _transfer,
+      _options
+    ) => {
+      const data = new FormData();
+      console.log(file);
+      data.append("files", file);
+      const controller = new AbortController(); // 업로드 중단
+
+      try {
+        const response = await axios.post("/fileupload", data, {
+          signal: controller.signal, // 업로드 중단
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+            // 진행사항 처리
+            progress(
+              !!progressEvent.total,
+              progressEvent.loaded,
+              progressEvent.total || 0
+            );
+          },
+        });
+        setData(response?.data || null);
+        console.log(response);
+      } catch (err) {
+        error("oh no");
+      }
+      return {
+        // 업로드 중단
+        abort: () => {
+          controller.abort();
+          abort();
+        },
+      };
+    },
+  }}
+  labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+/>
+```

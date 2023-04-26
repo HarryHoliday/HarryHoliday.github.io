@@ -1,3 +1,560 @@
 ---
 sidebar_position: 2
 ---
+
+# 1주
+
+- 세미나 소개
+- 라우팅 설정
+- useState, useEffect를 사용한 state관리 - 1
+
+---
+
+`웹 어플리케이션 [application + http]` [🔗 http spec](https://httpwg.org/specs/)
+
+```txt
+- 통신을 위한 네트워크 모델은 server - client 모델(tcp)과 peer to peer 모델(udp)
+- 우리가 만드는 어플리케이션은 다른 어플리케이션과의 통신을 위해 tcp기반의 응용계층인 http spec을 따른다
+- http는 텍스트 베이스 프로토콜로 내용을 사람이 읽을 수 있다 http/2는 바이너리로 작성된다
+- 요청과 응답으로 구분, 요청시 첫번째 줄인 request line을 이해하고 있는게 좋다고 생각한다
+- 맥북의 터미널에서는 nc라는 cli 명령어를 사용 http spec에 명시된 사항을 따라 request line을 작성하고
+  엔터를 두번치면 원하는 서버에 요청을 전송할 수 있다
+- 요청에 대한 응답의 첫번째 줄은 status line이다
+- http의 header중 content-type의 값에 대해 이해하는게 좋다고 생각한다 [🔗 mime-type](https://developer.mozilla.org/ko/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
+```
+
+---
+
+`Browser` [🔗 mdn](https://developer.mozilla.org/ko/docs/Glossary/Browser)
+
+```txt
+- 웹 브라우저 또는 브라우저는 웹에서 페이지를 찾아서 보여주고, 사용자가 하이퍼링크를 통해 다른 페이지로 이동할 수 있도록 하는 프로그램입니다. 브라우저는 가장 익숙한 타입의 사용자 에이전트입니다.
+```
+
+---
+
+`DOM` [🔗 mdn](https://developer.mozilla.org/ko/docs/Web/API/Document_Object_Model/Introduction)
+
+```txt
+- 문서 객체 모델(The Document Object Model, 이하 DOM) 은 HTML, XML 문서의 프로그래밍 interface 이다. DOM은 문서의 구조화된 표현(structured representation)을 제공하며 프로그래밍 언어가 DOM 구조에 접근할 수 있는 방법을 제공하여 그들이 문서 구조, 스타일, 내용 등을 변경할 수 있게 돕는다. DOM 은 nodes와 objects로 문서를 표현한다. 이들은 웹 페이지를 스크립트 또는 프로그래밍 언어들에서 사용될 수 있게 연결시켜주는 역할을 담당한다.
+- 웹 페이지는 일종의 문서(document)다. 이 문서는 웹 브라우저를 통해 그 내용이 해석되어 웹 브라우저 화면에 나타나거나 HTML 소스 자체로 나타나기도 한다. 동일한 문서를 사용하여 이처럼 다른 형태로 나타날 수 있다는 점에 주목할 필요가 있다. DOM 은 동일한 문서를 표현하고, 저장하고, 조작하는 방법을 제공한다. DOM 은 웹 페이지의 객체 지향 표현이며, 자바스크립트와 같은 스크립팅 언어를 이용해 DOM 을 수정할 수 있다.
+```
+
+---
+
+```txt
+- 브라우저의 화면에 표시되는 페이지를 제공한다
+- 페이지는 임의의 데이터와 함께 표현된다
+- 사용자로부터 데이터를 입력받아 페이지는 변할 수 있다
+```
+
+`프로젝트 - data input / output, data flow`
+
+_브라우저가 정확한 페이지를 표시하도록 데이터의 입력과 출력을 효율적으로 지속할 수 있는 흐름을 유지하도록 코딩하자_
+
+```txt
+create-react-app을 사용해 html, css, js등을 코딩하며,
+html, css, js, 기타파일등을 브라우저에 제공하는 WAS를 node로 코딩하도록 프로젝트를 구성했다
+
+...
+├── .env          // 환경변수
+├── Dockerfile    // 도커 이미지 생성
+├── entrypoint.sh // 실행스크립트
+├── server
+│ ├── index.ts    // entrypoint
+│ └── api         // 요청에 대한 처리 또는 proxy
+├── src
+│ ├── index.tsx   // entrypoint
+│ ├── index.css   // style
+│ ├── App.tsx     // app이 준비된 이후, Layout을 표시
+│ ├── components  // 페이지를 구성하는 components
+│ ├── fetchers    // 서버와 통신
+│ ├── hooks       // state와 components 연결
+│ ├── recoil      // state 저장 및 조작
+│ ├── routes      // url의 pathname과 매칭되는 페이지
+│ ├── helpers     // util, lib, etc...
+│ └── stories     // storybook
+├── types
+...
+```
+
+---
+
+1. react router v6의 가이드에 따라 두개의 페이지를 만든다
+2. home, about
+3. 페이지는 공통의 컴포넌트가 표시되는 부분과 각 페이지의 컨텐츠가 표시되는 부분으로 나눈다
+
+```txt
+
+#############################################
+# header                                    #
+#############################################
+# sidebar # main (home or about)
+#         #
+...
+#         #
+#############################################
+# footer?                                   #
+#############################################
+```
+
+---
+
+`context에 대한 설명`
+
+`💻 coding - start`
+
+[reactrouterv6 튜토리얼🔗](https://reactrouter.com/en/main/start/tutorial)
+
+- index.tsx 수정
+
+```tsx
+...
+import { createBrowserRouter, RouterProvider, Route } from 'react-router-dom';
+...
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <div>Hello world!</div>,
+  },
+]);
+
+...
+
+root.render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
+```
+
+- components 폴더 생성, 폴더안에 Layout.tsx 파일을 만든다
+- components/Layout.tsx
+
+```tsx
+// main tag 사이에 라우팅을 통한 context를 표시하기위해 react router v6의 Outlet사용
+import { Link, Outlet } from "react-router-dom";
+
+const Layout = () => {
+  return (
+    <>
+      <header>
+        <Link to="/home">home</Link>
+        <Link to="/about">about</Link>
+      </header>
+      <main>
+        <Outlet />
+      </main>
+      <footer></footer>
+    </>
+  );
+};
+
+export default Layout;
+```
+
+- routes 폴더 생성, 폴더안에 세개의 파일을 만든다
+- index.tsx, about.tsx, home.tsx
+
+- routes/index.tsx
+
+```tsx
+import About from "./about";
+import Home from "./home";
+
+type Menu = {
+  path: string;
+  title?: string;
+  icon?: React.ReactNode;
+  element: React.ReactNode;
+};
+
+export const menus: Menu[] = [
+  { path: "about", title: "about", icon: null, element: <About /> },
+  { path: "home", title: "home", icon: null, element: <Home /> },
+];
+```
+
+- routes/home.tsx
+
+```tsx
+const Home = () => <div>home</div>;
+
+export default Home;
+```
+
+- routes/about.tsx
+
+```tsx
+const About = () => <div>about</div>;
+
+export default About;
+```
+
+- index.tsx 수정
+
+```tsx
+...
+import App from './App';
+import { menus } from './routes';
+import ErrorPage from './error-page';
+...
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: menus,
+    errorElement: <ErrorPage />,
+  },
+]);
+
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+
+root.render(
+  <React.StrictMode>
+    <App>
+      <RouterProvider router={router} />
+    </App>
+  </React.StrictMode>
+);
+...
+```
+
+- App.tsx 컨텐츠의 제공여부를 판단한다 (메타데이터설정, 인증, 권한, etc)
+
+```tsx
+import { FC, ReactNode, useEffect, useState } from "react";
+import logo from "./logo.svg";
+
+type Props = {
+  children: React.ReactNode;
+};
+
+const App: FC<Props> = ({ children }) => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsReady(true);
+    }, 1000);
+  }, []);
+
+  if (!isReady)
+    return (
+      <div className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+      </div>
+    );
+
+  return <>{children}</>;
+};
+
+export default App;
+```
+
+- doc of useEffect at reactjs.org [🔗](https://ko.reactjs.org/docs/hooks-effect.html)
+
+```txt
+데이터 가져오기, 구독(subscription) 설정하기, 수동으로 React 컴포넌트의 DOM을 수정하는 것까지 이 모든 것이 side effects입니다.
+
+React의 class 생명주기 메서드에 친숙하다면,
+useEffect Hook을 componentDidMount와 componentDidUpdate, componentWillUnmount가 합쳐진 것으로 생각해도 좋습니다.
+```
+
+- useEffect
+
+```tsx
+...
+  const [isReady, setIsReady] = useState(false);
+  // 1초 뒤에 앱을 준비상태로 변경한다
+  useEffect(() => {
+    setTimeout(() => {
+      setIsReady(true);
+    }, 1000);
+  }, []);
+  // isReady의 변화를 관찰, 변화하면 3초뒤에 isReady의 불린값을 반대로 변경
+  useEffect(() => {
+    setTimeout(() => {
+      setIsReady((old) => !old);
+    }, 3000);
+  }, [isReady]);
+...
+```
+
+- 위 두번째 useEffect는 지운다
+
+- Layout을 수정한다
+- components/Layout을 지우고
+- components/layout 폴더를 생서, index.ts, Layout.tsx, Header.tsx, Sidebar.tsx를 만든다
+
+- components/layout/Header.tsx
+
+```tsx
+const Header = () => {
+  return (
+    <header className="flex flex-row items-center justify-center min-w-full h-[48px]">
+      <span className="text-xl normal-case">Yonex - v2</span>
+    </header>
+  );
+};
+
+export default Header;
+```
+
+- components/layout/Sidebar.tsx
+
+```tsx
+import { FC } from "react";
+import { Link } from "react-router-dom";
+import { menus } from "../../routes";
+import Bar3Icon from "../icons/Bar3Icon";
+
+const Sidebar: FC<{ height: string }> = ({ height }) => {
+  return (
+    <div className="z-10 flex flex-row" style={{ height }}>
+      <div className="sidebar relative w-[68px]  bg-[#eaf1fb]">
+        <button className="w-full btn btn-square btn-ghost">
+          <Bar3Icon />
+        </button>
+        <ul className="menu">
+          {menus.map(({ icon, path, title }, index) => (
+            <li key={index}>
+              <Link className="flex flex-col justify-center" to={path}>
+                {icon}
+                <span className="text-xs break-all">{title}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
+```
+
+- components/layout/Layout.tsx
+
+```tsx
+import { useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+
+const Layout = () => {
+  const [W_H, setW_H] = useState({ W: "100%", H: "100%" });
+
+  const calcW_H = () => {
+    setW_H({ W: `${window.innerWidth}px`, H: `${window.innerHeight}px` });
+  };
+
+  useEffect(() => {
+    calcW_H();
+    window.addEventListener("resize", calcW_H);
+    return () => {
+      window.removeEventListener("resize", calcW_H);
+    };
+  }, []);
+
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="flex flex-row" style={{ width: W_H.W }}>
+        {/* left */}
+        <Sidebar height={W_H.H} />
+        {/* right */}
+        <div className="flex flex-col w-full">
+          <Header />
+          <div className="flex items-center justify-center w-full h-full">
+            <Outlet />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;
+```
+
+- components/layout/index.ts
+
+```ts
+export { default as Layout } from "./Layout";
+```
+
+Heroicons에서 svg를 복사해 Icon component를 만든다
+
+- components/icons 폴더를 생성, HomeIcon.tsx와 InfoIcon.tsx를 만든다
+
+- components/icons/HomeIcon.tsx
+
+```tsx
+const HomeIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-6 h-6"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5l-1.5-.5M6.75 7.364V3h-3v18m3-13.636l10.5-3.819"
+    />
+  </svg>
+);
+
+export default HomeIcon;
+```
+
+- components/icons/InfoIcon.tsx
+
+```tsx
+const InfoIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-6 h-6"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+    />
+  </svg>
+);
+
+export default InfoIcon;
+```
+
+menus 에서 Icon을 사용하도록 맵핑한다
+
+- routes/index.tsx
+
+```tsx
+import HomeIcon from "../components/icons/HomeIcon";
+import InfoIcon from "../components/icons/InfoIcon";
+import About from "./about";
+import Home from "./home";
+
+type Menu = {
+  path: string;
+  title: string;
+  icon?: React.ReactNode;
+  element: React.ReactNode;
+};
+
+export const menus: Menu[] = [
+  { path: "home", title: "home", icon: <HomeIcon />, element: <Home /> },
+  { path: "about", title: "about", icon: <InfoIcon />, element: <About /> },
+];
+```
+
+- yonex-v1의 stopwatch code review
+
+- routes/stopwatch.tsx
+
+```tsx
+import { useState } from "react";
+import CommonButton from "../components/stop-watch/CommonButton";
+
+const StopWatch = () => {
+  const [stopWatch, setStopWatch] = useState({
+    second: 0,
+    isRunning: false,
+    intervalId: null as unknown as NodeJS.Timer,
+  });
+
+  const stopWatchStartHandler = () => {
+    if (stopWatch.isRunning) {
+      return;
+    }
+    setStopWatch((cur) => ({ ...cur, second: 0 }));
+    const intervalId = setInterval(() => {
+      setStopWatch((cur) => ({ ...cur, second: cur.second + 1 }));
+    }, 1000);
+    setStopWatch((cur) => ({
+      ...cur,
+      isRunning: true,
+      intervalId: intervalId,
+    }));
+  };
+
+  const stopWatchStopHandler = () => {
+    if (!stopWatch.isRunning) {
+      return;
+    }
+    clearInterval(stopWatch.intervalId);
+    setStopWatch((cur) => ({
+      ...cur,
+      isRunning: false,
+      intervalId: null as unknown as NodeJS.Timer,
+    }));
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div className="font-sans text-xl">{stopWatch.second}</div>
+      <div className="my-5" />
+      <CommonButton
+        bgClassName="btn-primary"
+        onClick={stopWatchStartHandler}
+        text="START"
+      />
+      <div className="my-2" />
+      <CommonButton
+        bgClassName="btn-secondary"
+        onClick={stopWatchStopHandler}
+        text="STOP"
+      />
+    </div>
+  );
+};
+
+export default StopWatch;
+```
+
+- components/stop-watch/CommonButton
+
+```tsx
+import type { FC, MouseEventHandler } from "react";
+
+type Props = {
+  text: string;
+  bgClassName: string;
+  onClick: MouseEventHandler<HTMLButtonElement>;
+};
+
+const CommonButton: FC<Props> = ({ text, bgClassName, onClick }) => {
+  return (
+    <button className={`btn btn-wide ${bgClassName}`} onClick={onClick}>
+      {text}
+    </button>
+  );
+};
+
+export default CommonButton;
+```
+
+- 메뉴에 등록
+- routes/index.tsx
+
+```tsx
+...
+export const menus: Menu[] = [
+  { path: 'home', title: 'home', icon: <HomeIcon />, element: <Home /> },
+  { path: 'about', title: 'about', icon: <InfoIcon />, element: <About /> },
+  { path: 'stopwatch', title: 'stopwatch', icon: <ClockIcon />, element: <StopWatch /> },
+];
+
+```
+
+`세미나시 코드 재작성`

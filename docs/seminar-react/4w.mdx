@@ -1,0 +1,379 @@
+---
+sidebar_position: 5
+---
+
+# 4주
+
+- 사용자로부터의 데이터 입력, form, react-hook-form, validation 사용 - 1
+
+---
+
+1. useLayoutEffect
+   [👉🔗](https://raw.githubusercontent.com/donavon/hook-flow/master/hook-flow.png)
+   [👉🔗](https://raw.githubusercontent.com/donavon/hook-flow/master/hook-flow.png)
+
+---
+
+- 읽어보기 MDN DOCS [👉🔗](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_forms_through_JavaScript)
+- react-hook-form [👉🔗](https://react-hook-form.com/get-started#Quickstart)
+- validation with react-hook-form [👉🔗](https://react-hook-form.com/get-started#SchemaValidation)
+
+- 위 가이드에 따라 관련 라이브러리를 인스톨 한다
+
+```bash
+# 클라이언트에서만 사용되므로 devDependency로 설치
+npm install react-hook-form --save-dev
+npm install @hookform/resolvers --save-dev
+# 서버에서 사용할 수도 있으므로 dependency로 설치
+npm install yup
+```
+
+- 먼저, 라이브러리를 사용하지 않고 form에 대해 알아보자
+- routes/amongAuth.tsx 생성
+
+```tsx
+import { MouseEventHandler } from "react";
+import { cx } from "../helpers/util";
+
+const radioList = ["email", "character", "phone"];
+
+const AmongAuth = () => {
+  const handleSubmit: MouseEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    // MDN 문서 관습을 따라 FD로 네이밍
+    const FD = new FormData(e.currentTarget);
+    // get checkbox data
+    // ex) ['email', 'character', 'phone']
+    console.log(FD.getAll("resources"));
+    // get others data
+    // ex) {resources: 'phone', clientId: '', secretKey: ''}
+    // 위 resources에는 처음 체크된 값이 입력되었다 위 getAll의 값으로 변환이 필요하다
+    const data = Object.fromEntries(FD);
+    console.log(data);
+  };
+
+  return (
+    <div className="flex flex-col w-full">
+      <label className="label">
+        <span className="label-text text-accent/60">Client ID 수동 생성</span>
+      </label>
+      <form className="flex flex-col gap-2 py-2" onSubmit={handleSubmit}>
+        <div className="flex flex-row justify-around form-control">
+          {radioList.map((item, index) => (
+            <div
+              key={index}
+              className="flex flex-row items-center justify-center align-middle form-control"
+            >
+              <label className="label">
+                <span className="label-text">{`${item
+                  .charAt(0)
+                  .toUpperCase()}${item.slice(1)}`}</span>
+              </label>
+              <input
+                type="checkbox"
+                name="resources"
+                value={item}
+                className={cx(
+                  "checkbox",
+                  item === radioList[0] && "radio-primary",
+                  item === radioList[1] && "radio-secondary",
+                  item === radioList[2] && "radio-accent"
+                )}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="form-control drop-shadow">
+          <input
+            name="clientId"
+            type="text"
+            placeholder="CLIENT ID를 입력해주세요"
+            className="w-full input input-bordered input-md "
+          />
+        </div>
+        <div className="form-control drop-shadow">
+          <input
+            name="secretKey"
+            type="text"
+            placeholder="SECRET KEY를 입력해주세요"
+            className="w-full input input-bordered input-md "
+          />
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="btn btn-primary drop-shadow glass bg-primary hover:btn-secondary"
+          >
+            수동생성
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default AmongAuth;
+```
+
+- react-hook-form, validation을 적용
+
+```tsx
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { cx } from "../helpers/util";
+
+interface IFormInputs {
+  clientId: string;
+  secretKey: string;
+  resources: string[];
+}
+
+const schema = yup
+  .object({
+    secretKey: yup.string().required(),
+    clientId: yup.string().required(),
+    resources: yup.array().nullable().required().min(1),
+  })
+  .required();
+
+const radioList = ["email", "character", "phone"];
+
+const AmongAuth = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IFormInputs>({
+    resolver: yupResolver(schema),
+  });
+
+  const onSubmit = async (data: IFormInputs) => {
+    try {
+      if (isProcessing) return;
+      setIsProcessing(true);
+    } catch (error) {
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col w-full">
+      <label className="label">
+        <span className="label-text text-accent/60">Client ID 수동 생성</span>
+      </label>
+      <form
+        className="flex flex-col gap-2 py-2"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <div className="flex flex-row justify-around form-control">
+          {radioList.map((item, index) => (
+            <div
+              key={index}
+              className="flex flex-row items-center justify-center align-middle form-control"
+            >
+              <label className="label">
+                <span className="label-text">{`${item
+                  .charAt(0)
+                  .toUpperCase()}${item.slice(1)}`}</span>
+              </label>
+              <input
+                type="checkbox"
+                value={item}
+                className={cx(
+                  "checkbox",
+                  (errors.resources && "input-error") ||
+                    (item === radioList[0] && "radio-primary") ||
+                    (item === radioList[1] && "radio-secondary") ||
+                    (item === radioList[2] && "radio-accent")
+                )}
+                {...register("resources")}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="flex justify-center -mt-2 text-xs text-error">
+          {errors.resources?.message}
+        </p>
+        <div className="form-control drop-shadow">
+          <input
+            type="text"
+            placeholder="CLIENT ID를 입력해주세요"
+            className={cx(
+              "w-full input input-bordered input-md",
+              errors.clientId && "input-error"
+            )}
+            {...register("clientId")}
+          />
+          <p className="text-xs text-error">{errors.clientId?.message}</p>
+        </div>
+        <div className="form-control drop-shadow">
+          <input
+            type="text"
+            placeholder="SECRET KEY를 입력해주세요"
+            className={cx(
+              "w-full input input-bordered input-md",
+              errors.secretKey && "input-error"
+            )}
+            {...register("secretKey")}
+          />
+          <p className="text-xs text-error">{errors.secretKey?.message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className={cx(
+              "btn btn-outline bg-primary glass hover:btn-secondary min-w-[16%]",
+              isProcessing && "loading btn-disabled"
+            )}
+          >
+            수동생성
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default AmongAuth;
+```
+
+- yup schema파일을 분리한다
+- src/yup/amongAuthSchema.ts 생성
+
+```ts
+import * as yup from "yup";
+
+export interface IClientIdForm {
+  clientId: string;
+  secretKey: string;
+  resources: string[];
+}
+
+export const clientIdSchema = yup
+  .object({
+    secretKey: yup.string().required(),
+    clientId: yup.string().required(),
+    resources: yup.array().nullable().required().min(1),
+  })
+  .required();
+```
+
+- routes/amonaAuth.tsx 수정
+
+```tsx
+...
+import { IClientIdForm, clientIdSchema } from '../yup/amongAuthSchema';
+
+const radioList = ['email', 'character', 'phone'];
+
+const AmongAuth = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IClientIdForm>({
+    resolver: yupResolver(clientIdSchema),
+  });
+
+  const onSubmit = async (data: IClientIdForm) => {
+    try {
+      if (isProcessing) return;
+      setIsProcessing(true);
+    } catch (error) {
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+...
+```
+
+- 데이터 처리 과정에서 처리 시간을 지연시켜 데이터 처리중일때의 state를 관리해보자
+- routes/amonaAuth.tsx 수정
+
+```tsx
+...
+const onSubmit = async (data: IClientIdForm) => {
+    try {
+      if (isProcessing) return;
+      setIsProcessing(true);
+      console.log(data);
+      // 1s delay
+      await new Promise((resolve, reject) => {
+        setTimeout(resolve, 1000);
+      });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+...
+```
+
+- 버튼의 UI 변화 및 중복클릭 방지 확인
+- 데이터 처리중의 state는 다른 컴포넌트에서도 사용될 가능성이 높으므로, 관련 기능을 hook로 만들어 재사용이 가능하도록 한다
+
+- hooks/useProcessing.ts 생성
+
+```ts
+import { useState } from "react";
+
+export const useProcessing = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const registeHandler = async (cb: () => void) => {
+    if (isProcessing) return;
+    try {
+      setIsProcessing(true);
+      await cb();
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return { isProcessing, registeHandler };
+};
+```
+
+- routes/amonaAuth.tsx 수정
+
+```tsx
+...
+import { useProcessing } from '../hooks/useProcessing';
+
+const radioList = ['email', 'character', 'phone'];
+
+const AmongAuth = () => {
+  const { isProcessing, registeHandler } = useProcessing();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IClientIdForm>({
+    resolver: yupResolver(clientIdSchema),
+  });
+
+  const onSubmit = async (data: IClientIdForm) => {
+    try {
+      await registeHandler(async () => {
+        await new Promise((resolve, reject) => {
+          setTimeout(resolve, 1000);
+        });
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+...
+```
+
+- useProcessing의 useState를 recoil에서 관리하게 되면 useProcessing에서 isProcessing를 확인하는 모든 컴포넌트에서 동일한 state를 유지할 수 있다
