@@ -7,7 +7,7 @@ sidebar_position: 1
 javascript, typescript  
 node.js react.js
 
-## netmarble <sub>2022. 4. 25 ~</sub>
+<!-- ## netmarble <sub>2022. 4. 25 ~</sub>
 
 > 웹 프론트엔드 개발
 
@@ -193,4 +193,4 @@ $ aws
 $ jquery, css, html
 $ centos, nginx, php
 $ mysql
-```
+``` -->
