@@ -2,6 +2,60 @@
 sidebar_position: 1
 ---
 
-# Introduction
+# 2023. 05. 04(Thu)
 
-expo 개발 사항 정리
+summary of expo development
+
+```sh title="setting up"
+npx create-expo-app dev-squad-mobile --template
+# ✔ Choose a template: › Navigation (TypeScript)
+
+# https://docs.expo.dev/guides/using-firebase/#using-react-native-firebase
+npx expo install expo-dev-client
+npx expo install @react-native-firebase/app
+npx expo install @react-native-firebase/auth
+npx expo install @react-native-google-signin/google-signin
+npx expo install @invertase/react-native-apple-authentication
+npx expo install @react-native-firebase/firestore
+npx expo install @react-native-firebase/functions
+npx expo install @react-native-firebase/perf
+npx expo install @react-native-firebase/crashlytics
+npx expo install expo-build-properties
+npx expo install react-native-gesture-handler
+# https://rnfirebase.io/#expo
+...
+...
+# copy file "googleServicesFile": "./GoogleService-Info.plist", "googleServicesFile": "./google-services.json",
+
+# if need
+# Using node to generate images. This is much slower than using native packages.
+# › Optionally you can stop the process and try again after successfully running `npm install -g sharp-cli`.
+npm install -g sharp-cli
+npx expo prebuild --clean
+
+# nativewind
+npm install nativewind
+npm install --save-dev tailwindcss
+npx tailwindcss init
+```
+
+```js title="filename:tailwind.config.js"
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+```
+
+```js title="filename:babel.config.js"
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ["babel-preset-expo"],
+    plugins: [require.resolve("expo-router/babel"), "nativewind/babel"],
+  };
+};
+```
