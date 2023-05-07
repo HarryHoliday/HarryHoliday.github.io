@@ -59,3 +59,110 @@ module.exports = function (api) {
   };
 };
 ```
+
+https://github.com/facebook/react-native/issues/34106
+
+```js filename:deployment-targets.js
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { withDangerousMod, withPlugins } = require("@expo/config-plugins");
+const {
+  mergeContents,
+} = require("@expo/config-plugins/build/utils/generateCode");
+const fs = require("fs");
+const path = require("path");
+
+async function readFileAsync(path) {
+  return fs.promises.readFile(path, "utf8");
+}
+
+async function saveFileAsync(path, content) {
+  return fs.promises.writeFile(path, content, "utf8");
+}
+
+const withFixedDeploymentTarget = (c) => {
+  return withDangerousMod(c, [
+    "ios",
+    async (config) => {
+      const file = path.join(config.modRequest.platformProjectRoot, "Podfile");
+      const contents = await readFileAsync(file);
+      await saveFileAsync(file, fixDeploymentTarget(contents));
+      return config;
+    },
+  ]);
+};
+
+function fixDeploymentTarget(src) {
+  return mergeContents({
+    tag: `rn-fix-deployment-target`,
+    src,
+    newSrc: `
+   installer.pods_project.targets.each do |target|
+        target.build_configurations.each do |config|
+               config.build_settings['SWIFT_VERSION'] = '5.0'
+               config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
+  end
+`,
+    anchor: /post_install/,
+    offset: 1,
+    comment: "#",
+  }).contents;
+}
+
+module.exports = (config) => withPlugins(config, [withFixedDeploymentTarget]);
+```
+
+```add.json
+{
+  "expo": {
+    "name": "dev-squad-mobile",
+    "slug": "dev-squad-mobile",
+    "extra": {
+      "webClientId": "933883413937-d8afv6qm8efklpi58kfk6ioph4vtr98f.apps.googleusercontent.com"
+    },
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "co.joinsquad.app.dev.ios"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "co.joinsquad.app.dev.aos"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "./deployment-targets",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-google-signin/google-signin",
+      "@react-native-firebase/perf",
+      "@react-native-firebase/crashlytics"
+    ]
+  }
+}
+```
