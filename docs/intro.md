@@ -7,7 +7,7 @@ sidebar_position: 1
 javascript, typescript  
 node.js react.js
 
-<!-- ## netmarble <sub>2022. 4. 25 ~</sub>
+## netmarble <sub>2022. 4. 25 ~</sub>
 
 > 웹 프론트엔드 개발
 
@@ -16,6 +16,10 @@ node.js react.js
 ```text title="기술스택"
 react, zustand, tailwindcss
 node, express, helmet, http-proxy-middleware
+
+remix
+
+k8s
 ```
 
 ## presence <sub>2021. 8 ~ 2022. 4</sub>
@@ -193,4 +197,4 @@ $ aws
 $ jquery, css, html
 $ centos, nginx, php
 $ mysql
-``` -->
+```
