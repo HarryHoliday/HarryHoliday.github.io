@@ -13,13 +13,21 @@ node.js react.js
 
 ### 프로젝트
 
+```text
+- 인증
+- 재직 중
+```
+
+
 ```text title="기술스택"
-react, zustand, tailwindcss
+react, zustand, tailwindcss, swc
 node, express, helmet, http-proxy-middleware
 
 remix
 
-k8s
+k8s docker
+
+
 ```
 
 ## presence <sub>2021. 8 ~ 2022. 4</sub>
