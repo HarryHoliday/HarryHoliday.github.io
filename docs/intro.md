@@ -7,7 +7,11 @@ sidebar_position: 1
 javascript, typescript  
 node.js react.js
 
-## netmarble <sub>2022. 4. 25 ~</sub>
+## 프리랜서 <sub>2024. 8 ~ </sub>
+
+> 웹 풀스택 개발
+
+## netmarble <sub>2022. 4 ~ 2024. 8</sub>
 
 > 웹 프론트엔드 개발
 
