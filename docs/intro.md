@@ -19,7 +19,6 @@ node.js react.js
 
 ```text
 - 인증
-- 재직 중
 ```
 
 
